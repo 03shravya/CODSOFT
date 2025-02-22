@@ -1,55 +1,133 @@
+import tkinter as tk
+from tkinter import messagebox
 import random
 import string
+import pyperclip
 import time
 
 
-def generate_password(length=12, use_digits=True, use_special_chars=True):
-    """Generate a strong random password with customization options."""
-    if length < 4:
-        print("⚠️ Password length should be at least 4 characters for security!")
-        return None
+# Function to generate password
+def generate_password():
+    password_entry.delete(0, tk.END)
+    password_entry.insert(0, "Generating... ⏳")
+    root.update_idletasks()
+    time.sleep(0.5)
 
-    characters = string.ascii_letters
-    if use_digits:
+    length = length_var.get()
+
+    if not length.isdigit() or int(length) <= 0:
+        messagebox.showwarning("⚠️ Warning", "Please enter a valid password length!")
+        password_entry.delete(0, tk.END)
+        return
+
+    length = int(length)
+    use_upper = upper_var.get()
+    use_lower = lower_var.get()
+    use_numbers = number_var.get()
+    use_symbols = symbol_var.get()
+
+    characters = ""
+    if use_upper:
+        characters += string.ascii_uppercase
+    if use_lower:
+        characters += string.ascii_lowercase
+    if use_numbers:
         characters += string.digits
-    if use_special_chars:
+    if use_symbols:
         characters += string.punctuation
 
-    password = ''.join(random.choices(characters, k=length))
-    return password
+    if not characters:
+        messagebox.showwarning("⚠️ Warning", "Please select at least one character type!")
+        password_entry.delete(0, tk.END)
+        return
+
+    password = ''.join(random.choice(characters) for _ in range(length))
+    password_entry.delete(0, tk.END)
+    password_entry.insert(0, password)
+
+    update_strength_label(password)
 
 
-def get_user_preferences():
-    """Get user preferences for password generation."""
-    try:
-        print("✨ Let's craft a powerful password for you! ✨")
-        time.sleep(1)
-        length = int(input("📏 Enter desired password length (minimum 4): "))
-        use_digits = input("🔢 Include numbers? (y/n): ").strip().lower() == 'y'
-        use_special_chars = input("🔣 Include special characters? (y/n): ").strip().lower() == 'y'
-        return length, use_digits, use_special_chars
-    except ValueError:
-        print("❌ Oops! That doesn't look like a number. Try again!")
-        return None, None, None
+# Function to copy password to clipboard
+def copy_to_clipboard():
+    password = password_entry.get()
+    if password and password != "Generating... ⏳":
+        pyperclip.copy(password)
+        messagebox.showinfo("✅ Copied", "Password copied to clipboard!")
+    else:
+        messagebox.showwarning("⚠️ Warning", "No password to copy!")
 
 
-def display_loading():
-    """Simulate a fun loading animation."""
-    print("⏳ Generating your secure password...", end="", flush=True)
-    for _ in range(5):
-        time.sleep(0.5)
-        print(".", end="", flush=True)
-    print(" ✅")
+# Function to check password strength
+def update_strength_label(password):
+    strength_label.config(fg="black")
+    if len(password) < 6:
+        strength_label.config(text="🔴 Weak", fg="red")
+    elif 6 <= len(password) < 10:
+        strength_label.config(text="🟡 Medium", fg="orange")
+    else:
+        strength_label.config(text="🟢 Strong", fg="green")
 
 
-if __name__ == "__main__":
-    print("🔐 Welcome to the Ultimate Password Generator! 🔐")
-    length, use_digits, use_special_chars = get_user_preferences()
-    if length:
-        display_loading()
-        new_password = generate_password(length, use_digits, use_special_chars)
-        if new_password:
-            print(f"🎉 Your ultra-secure password: \033[1;32m{new_password}\033[0m")
-            print("🔒 Keep it safe and secure!")
+# GUI Setup
+root = tk.Tk()
+root.title("🔐 Password Generator")
+root.geometry("550x650")
+root.config(bg="#2C3E50")  # Dark background
 
+# Title Label
+tk.Label(root, text="🔒 Secure Password Generator", font=("Arial", 20, "bold"), bg="#2C3E50", fg="white").pack(pady=20)
+
+# Password Length
+tk.Label(root, text="🔢 Password Length:", bg="#2C3E50", fg="white", font=("Arial", 14, "bold")).pack(pady=5)
+length_var = tk.StringVar()
+length_entry = tk.Entry(root, textvariable=length_var, width=5, font=("Arial", 16), bg="white", fg="black",
+                        justify="center")
+length_entry.pack(pady=5)
+
+# Checkbox Styling (Large)
+check_font = ("Arial", 14, "bold")
+check_bg = "#34495E"  # Dark gray-blue
+check_fg = "white"
+
+# Options for password strength (Now defaulting to unchecked)
+upper_var = tk.BooleanVar(value=False)
+lower_var = tk.BooleanVar(value=False)
+number_var = tk.BooleanVar(value=False)
+symbol_var = tk.BooleanVar(value=False)
+
+tk.Checkbutton(root, text="🔠 Include Uppercase", variable=upper_var, font=check_font, bg=check_bg, fg=check_fg,
+               selectcolor=check_bg, padx=10, pady=5).pack()
+tk.Checkbutton(root, text="🔡 Include Lowercase", variable=lower_var, font=check_font, bg=check_bg, fg=check_fg,
+               selectcolor=check_bg, padx=10, pady=5).pack()
+tk.Checkbutton(root, text="🔢 Include Numbers", variable=number_var, font=check_font, bg=check_bg, fg=check_fg,
+               selectcolor=check_bg, padx=10, pady=5).pack()
+tk.Checkbutton(root, text="🔣 Include Symbols", variable=symbol_var, font=check_font, bg=check_bg, fg=check_fg,
+               selectcolor=check_bg, padx=10, pady=5).pack()
+
+# Generate Button
+generate_btn = tk.Button(root, text="🔄 Generate Password", command=generate_password, bg="#27AE60", fg="white",
+                         font=("Arial", 16, "bold"), padx=20, pady=12)
+generate_btn.pack(pady=20)
+
+# Password Entry
+password_entry = tk.Entry(root, font=("Arial", 18, "bold"), width=30, justify="center", bg="white", fg="black",
+                          relief="solid", borderwidth=3)
+password_entry.pack(pady=10)
+
+# Strength Label
+strength_label = tk.Label(root, text="🟡 Strength: TBD", font=("Arial", 14, "bold"), bg="#2C3E50", fg="white")
+strength_label.pack(pady=10)
+
+# Copy Button
+copy_btn = tk.Button(root, text="📋 Copy to Clipboard", command=copy_to_clipboard, bg="#2980B9", fg="white",
+                     font=("Arial", 16, "bold"), padx=20, pady=12)
+copy_btn.pack(pady=10)
+
+# Footer
+tk.Label(root, text="🔑 Secure & Random Passwords Every Time!", font=("Arial", 12, "italic"), bg="#2C3E50",
+         fg="gray").pack(pady=20)
+
+# Run GUI
+root.mainloop()
 
